@@ -1,0 +1,38 @@
+name: Publish to PyPI and GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 只要你推送 v 开头的标签（如 v0.1.0），就会触发
+
+jobs:
+  build-n-publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write      # PyPI 发布权限
+      contents: write      # 创建 GitHub Release 权限
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+
+    - name: Build packages
+      run: |
+        pip install build
+        python -m build
+
+    # 步骤 A: 发布到 PyPI
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+    # 步骤 B: 创建 GitHub Release
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/* # 将打包好的 whl 和 tar.gz 挂载到 Release 附件中
+        generate_release_notes: true # 自动根据提交记录生成变更日志
