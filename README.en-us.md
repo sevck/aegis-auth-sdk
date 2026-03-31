@@ -45,9 +45,8 @@ Aegis Auth SDK is a modern authentication toolkit for Web applications, built on
 ---
 
 ### 4. Enterprise-grade User Management
-- **Unified user view**: Credential management, device解绑, status control  
+- **Unified user view**: Credential management, device binding, status control  
 - **Audit logs**: Full authentication traceability  
-- **SSO friendly**: Easily integrates with enterprise identity systems (e.g., yiducloud.cn)  
 
 ---
 
