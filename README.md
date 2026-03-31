@@ -1,10 +1,4 @@
 <p align="center">
-<a href="https://github.com/sevck/aegis-auth-sdk/actions">
-    <img src="https://github.com/sevck/aegis-auth-sdk/actions/workflows/test.yml/badge.svg" alt="Test">
-</a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/sevck/aegis-auth-sdk">
-    <img src="https://coverage-badge.samuelcolvin.workers.dev/sevck/aegis-auth-sdk.svg" alt="Coverage">
-</a>
 <a href="https://pypi.org/project/aegis-auth-sdk">
     <img src="https://img.shields.io/pypi/v/aegis-auth-sdk?color=%2334D058&label=pypi%20package" alt="Package version">
 </a>
