@@ -1,1 +1,0 @@
-aegis_auth_sdk
