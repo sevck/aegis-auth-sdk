@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegis-auth-sdk"
+version = "0.0.1"
+description = "Aegis Authentication SDK for Python."
+readme = "README.md"
+requires-python = ">=3.7"

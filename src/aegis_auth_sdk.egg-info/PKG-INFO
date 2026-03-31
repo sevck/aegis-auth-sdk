@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: aegis-auth-sdk
+Version: 0.0.1
+Summary: Aegis Authentication SDK for Python.
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+
+Aegis Auth SDK - Work in progress.
