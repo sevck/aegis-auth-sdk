@@ -69,17 +69,28 @@ client = AegisClient(
     secret_key="your_secret_key"
 )
 
-info = client.get_app_info()
-print(info)
+# Get app info
+app_info = client.get_app_info()
+print(app_info)
 
-users = client.get_users()
-for user in users["users"]:
-    print(f'{user["username"]} - Status: {user["status"]}')
+# List users
+result = client.get_users()
+for user in result["users"]:
+    print(f'{user["username"]} - Status: {"Enabled" if user["status"] else "Disabled"}')
 
+# Enable / disable user
 client.set_user_status("alice", False)
+
+# Enable / disable app registration
+client.set_app_register(False)
+
+# Delete user
 client.delete_user("alice")
 
-logs = client.get_logs(page=1, page_size=10, log_type="auth_verify")
+# Query logs
+logs = client.get_logs(log_type="auth_verify", page_size=5)
+for entry in logs["items"]:
+    print(f'[{entry["log_time"]}] {entry["username"]} from {entry["log_ip"]} - {entry["log_info"]}')
 ```
 
 ---
@@ -89,13 +100,80 @@ logs = client.get_logs(page=1, page_size=10, log_type="auth_verify")
 ### Frontend Example
 
 ```javascript
-// (Same as your original frontend example)
+export const fetchUserLoginOptions = (param) => {
+    return request({
+        url: '/api/user/login/options',
+        headers: { 'Content-Type': 'application/json', 'Login-Name': param.username },
+        method: 'post',
+        data: param
+    });
+};
+
+export const fetchUserLoginVerify = (username, asseResp) => {
+    return request({
+        url: '/api/user/login/verification',
+        method: 'post',
+        headers: { 'Content-Type': 'application/json', 'Login-Name': username },
+        data: asseResp
+    });
+};
+
+const resp = await fetchUserLoginOptions(param);
+const asseResp = await startAuthentication(resp.data);
+const verificationResp = await fetchUserLoginVerify(param.username, asseResp);
+
+if (verificationResp.data.code === 200) {
+    localStorage.setItem('Authorization', verificationResp.data.token_type + ' ' + verificationResp.data.access_token);
+    router.push('/');
+}
 ```
 
 ### Backend Example
 
 ```python
-# (Same as your original backend example)
+from aegis_auth_sdk import AegisClient
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+import jwt, datetime
+
+SECRET_KEY = "your-jwt-secret"
+client = AegisClient(
+    base_url="https://your-server:8000",
+    app_id="your_app_id",
+    secret_key="your_secret_key"
+)
+
+user = APIRouter()
+
+@user.post("/login/options")
+async def user_login_options(req: dict, request: Request):
+    username = request.headers.get("Login-Name")
+    resp = client.get_login_options(username)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
+
+@user.post("/login/verification")
+async def user_login_verification(req: dict, request: Request):
+    username = request.headers.get("Login-Name")
+    resp = client.get_login_verify(username, req)
+    if resp.json().get("verified", False):
+        token = jwt.encode({
+            "user": username,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
+        }, SECRET_KEY, algorithm="HS256")
+        return JSONResponse(content={"access_token": token, "token_type": "Bearer", "code": 200})
+    return JSONResponse(status_code=200, content={"code": 500, "msg": resp.text})
+
+@user.post("/register/options")
+async def user_register_options(req: dict, request: Request):
+    username = request.headers.get("Login-Name")
+    resp = client.get_register_options(username)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
+
+@user.post("/register/verification")
+async def user_register_verification(req: dict, request: Request):
+    username = request.headers.get("Login-Name")
+    resp = client.register_verify(username, req)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
 ```
 
 ---
@@ -107,6 +185,7 @@ logs = client.get_logs(page=1, page_size=10, log_type="auth_verify")
 | 200        | OK            | Request successful |
 | 400        | Bad Request   | Missing or invalid parameters |
 | 401        | Unauthorized  | Invalid App ID / Secret or app disabled |
+| 403        | Forbidden     | Registration disabled or WebAuthn verification failed |
 | 404        | Not Found     | Resource not found |
 | 500        | Server Error  | Internal server error |
 
