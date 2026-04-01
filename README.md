@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-<a href="./README.md">English</a> | <a href="./README.zh-cn.md">简体中文</a>
+<a href="./README.en-us.md">English</a> | <a href="./README.zh-cn.md">简体中文</a>
 </p>
 
 # Aegis Auth SDK
@@ -21,30 +21,30 @@ Aegis Auth SDK 是一款面向现代 Web 应用的身份认证开发工具包，
 ## 🌟 核心优势
 
 ### 1. 极致的开发体验
-- **开箱即用**：支持 `pip` 一键安装，无需复杂环境配置  
-- **高度封装**：屏蔽 WebAuthn 底层交互细节，仅需少量代码即可完成接入  
+- **开箱即用**：支持 `pip` 一键SDK安装，无需复杂环境配置  
+- **高度封装**: 优化底层交互细节，仅需少量代码即可完成接入  
 - **快速集成**：分钟级完成用户注册与登录能力接入  
 
 ---
 
 ### 2. 安全合规的无密码方案
-- **彻底去密码化**：无需用户记忆或输入密码，有效防御撞库与钓鱼攻击  
-- **敏感数据最小化**：服务端仅存储公钥，不涉及生物特征原始数据  
-- **抗自动化攻击**：基于挑战-响应机制，天然抵御暴力破解与批量注册  
+- **无密码**：无需用户输入密码，有效防御弱口令与密码泄露撞库攻击  
+- **无敏感数据**：服务端仅存储公钥，不涉及生物特征原始数据，不存储任何敏感信息  
+- **抗自动化攻击**：基于挑战-响应机制，天然抵御暴力破解与批量注册，可防止机器人攻击  
 
 ---
 
-### 3. 跨平台与生物识别支持
+### 3. 跨平台支持
 - **全平台兼容**：
-  - Windows Hello  
+  - Windows 10以上版本(Windows Hello)  
   - macOS Touch ID  
   - iOS / Android（Face ID / 指纹）  
 - **设备级强绑定**：实现“用户 + 设备”双因子绑定，确保操作主体可信  
 
 ---
 
-### 4. 轻松管理用户
-- **统一用户视图**：支持凭证管理、设备解绑、状态控制等  
+### 4. 企业级用户管理能力
+- **统一用户视图**：支持用户列表、用户状态管理、应用注册管理等  
 - **审计与日志**：完整认证日志，便于安全审计与追踪  
 
 ---
@@ -63,22 +63,28 @@ client = AegisClient(
 )
 
 # 获取应用信息
-info = client.get_app_info()
-print(info)
+app_info = client.get_app_info()
+print(app_info)
 
 # 获取用户列表
-users = client.get_users()
-for user in users["users"]:
-    print(f'{user["username"]} - 状态: {user["status"]}')
+result = client.get_users()
+for user in result["users"]:
+    print(f'  {user["username"]:<20} 状态={"启用" if user["status"] else "禁用"}  '
+          f'注册时间={user["register_time"]}  最后登录={user["login_time"] or "从未"}')
 
-# 禁用用户
+# 禁用/启用用户
 client.set_user_status("alice", False)
+
+# 禁用/启用应用注册
+client.set_app_register( False)
 
 # 删除用户
 client.delete_user("alice")
 
 # 查询日志
-logs = client.get_logs(page=1, page_size=10, log_type="auth_verify")
+logs = client.get_logs(log_type="auth_verify", page_size=5)
+for entry in logs["items"]:
+    print(f'  [{entry["log_time"]}] {entry["username"]} from {entry["log_ip"]} - {entry["log_info"]}')
 ```
 
 ---
@@ -88,94 +94,57 @@ logs = client.get_logs(page=1, page_size=10, log_type="auth_verify")
 ### 前端示例
 
 ```javascript
-const API_BASE = "https://your-server:8000/api";
-const APP_ID   = "your_app_id";
 
-// ── 用户注册 ──
-async function registerUser(username) {
-  // 1. 获取注册选项
-  const resp = await fetch(`${API_BASE}/registration/${APP_ID}/${username}/options`, { method: "POST" });
-  const options = await resp.json();
+export const fetchUserLoginOptions = (param) => {
+    return request({
+        url: '/api/user/login/options', // 你的服务后端API
+        headers: {
+            'Content-Type': 'application/json',
+            'Login-Name': param.username,
+        },
+        method: 'post',
+        data: param
+    });
+};
 
-  // 2. 处理 challenge 和 user.id（Base64URL → ArrayBuffer）
-  options.challenge = base64urlToBuffer(options.challenge);
-  options.user.id   = base64urlToBuffer(options.user.id);
+export const fetchUserLoginVerify = (username: string, asseResp: object) => {
+    return request({
+        url: '/api/user/login/verification', // 你的服务后端API
+        method: 'post',
+        headers: {
+            'Content-Type': 'application/json',
+            'Login-Name': username
+        },
+        data: asseResp
+    });
+};
 
-  // 3. 调用浏览器 WebAuthn API
-  const credential = await navigator.credentials.create({ publicKey: options });
+const resp = await fetchUserLoginOptions(param);
+const registrationOptions = resp.data;
+const asseResp = await startAuthentication(registrationOptions);
+const verificationResp = await fetchUserLoginVerify(param.username, asseResp);
+const verificationJSON = verificationResp.data;
 
-  // 4. 序列化并发送验证
-  const body = {
-    id:    credential.id,
-    rawId: bufferToBase64url(credential.rawId),
-    type:  credential.type,
-    response: {
-      clientDataJSON:    bufferToBase64url(credential.response.clientDataJSON),
-      attestationObject: bufferToBase64url(credential.response.attestationObject),
+if (verificationJSON.code === 200) {
+    ElMessage.success('登录成功');
+    localStorage.setItem('username', param.username);
+    localStorage.setItem(
+        'Authorization',
+        verificationJSON.token_type + ' ' + verificationJSON.access_token
+    );
+
+    router.push('/');
+
+    if (checked.value) {
+      localStorage.setItem('login-param', JSON.stringify(param));
+    } else {
+      localStorage.removeItem('login-param');
     }
-  };
-
-  const verifyResp = await fetch(
-    `${API_BASE}/registration/${APP_ID}/${username}/verification`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-  );
-  return verifyResp.json(); // { verified: true }
-}
-
-// ── 用户认证 ──
-async function authenticateUser(username) {
-  // 1. 获取认证选项
-  const resp = await fetch(`${API_BASE}/authentication/${APP_ID}/${username}/options`, { method: "POST" });
-  const options = await resp.json();
-
-  // 2. 处理 challenge（Base64URL → ArrayBuffer）
-  options.challenge = base64urlToBuffer(options.challenge);
-  if (options.allowCredentials) {
-    options.allowCredentials = options.allowCredentials.map(c => ({
-      ...c, id: base64urlToBuffer(c.id)
-    }));
+  } else {
+    ElMessage.error('登录失败');
   }
+};
 
-  // 3. 调用浏览器 WebAuthn API
-  const credential = await navigator.credentials.get({ publicKey: options });
-
-  // 4. 序列化并发送验证
-  const body = {
-    id:    credential.id,
-    rawId: bufferToBase64url(credential.rawId),
-    type:  credential.type,
-    response: {
-      clientDataJSON:    bufferToBase64url(credential.response.clientDataJSON),
-      authenticatorData: bufferToBase64url(credential.response.authenticatorData),
-      signature:         bufferToBase64url(credential.response.signature),
-      userHandle:        credential.response.userHandle
-                           ? bufferToBase64url(credential.response.userHandle) : null,
-    }
-  };
-
-  const verifyResp = await fetch(
-    `${API_BASE}/authentication/${APP_ID}/${username}/verification`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-  );
-  return verifyResp.json(); // { verified: true }
-}
-
-// ── Base64URL 工具函数 ──
-function base64urlToBuffer(b64url) {
-  const base64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-  const binary = atob(padded);
-  const bytes  = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
-
-function bufferToBase64url(buffer) {
-  const bytes  = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
 
 ```
 
@@ -185,26 +154,75 @@ from aegis_auth_sdk import AegisClient
 
 client = AegisClient(
     base_url="https://your-server:8000",
-    app_id="6e7fd30dad894d7d8ca2e73ea4f285cb",
-    secret_key="your_secret_key_here"
+    app_id="your_app_id",
+    secret_key="your_secret_key"
 )
 
-# 查看应用信息
-print(client.get_app_info())
 
-# 列出所有用户
-result = client.get_users()
-for user in result["users"]:
-    print(f'  {user["username"]:<20} 状态={"启用" if user["status"] else "禁用"}  '
-          f'注册时间={user["register_time"]}  最后登录={user["login_time"] or "从未"}')
+@user.post("/login/options", description="用户登录预请求")
+async def user_login_options(req: dict, request: Request, db: Session = Depends(get_db)):
+    try:
+        headers = request.headers
+        username = headers.get("Login-Name", None)
+        # 获取登录options
+        resp = client.get_login_options(username)
 
-# 禁用可疑用户
-client.set_user_status("suspicious_user", False)
+        return JSONResponse(status_code=resp.status_code, content=resp.json())
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
 
-# 查询认证日志
-logs = client.get_logs(log_type="auth_verify", page_size=5)
-for entry in logs["items"]:
-    print(f'  [{entry["log_time"]}] {entry["username"]} from {entry["log_ip"]} - {entry["log_info"]}')
+
+@user.post("/login/verification", description="用户登录验证")
+async def user_login_verification(req: dict, request: Request, db: Session = Depends(get_db)):
+    try:
+        headers = request.headers
+        username = headers.get("Login-Name", None)
+        origin = headers.get("origin", None)
+        if username is None or origin is None:
+            return JSONResponse(status_code=200, content={"code": False, "msg": "Miss username or origin"})
+        # 验证登录
+        resp = client.get_login_verify(username, req)
+        # 验证成功签发jwt token
+        if resp.json().get("verified", False):
+            token = jwt.encode({
+                "user": username,
+                "role": "admin",
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
+            }, SECRET_KEY, algorithm=algorithm).decode("utf-8")
+            return JSONResponse(
+              status_code=resp.status_code,
+              content={"access_token": token, "token_type": "Bearer", "code": 200}
+            )
+
+        return JSONResponse(
+          status_code=200,
+          content={"code": 500, "username": username, "msg": resp.text}
+        )
+    except Exception as e:
+        return HTTPException(status_code=200, detail={"code": 400, "msg": str(e)})
+
+
+@user.post("/register/options", description="注册预请求")
+async def user_register_options(req: dict, request: Request, db: Session = Depends(get_db)):
+    try:
+        headers = request.headers
+        username = headers.get("Login-Name", None)
+        # 获取注册options
+        resp = client.get_register_options(username)
+        return JSONResponse(status_code=resp.status_code, content=resp.json())
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
+
+@user.post("/register/verification", description="注册验证")
+async def user_register_verification(req: dict, request: Request, db: Session = Depends(get_db)):
+    try:
+        headers = request.headers
+        username = headers.get("Login-Name", None)
+        # 验证注册
+        resp = client.register_verify(username, req)
+        return JSONResponse(status_code=resp.status_code, content=resp.json())
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
 ```
 
 ## ⚠️ 错误码说明
@@ -217,16 +235,3 @@ for entry in logs["items"]:
 | 404        | 未找到     | 资源不存在 |
 | 500        | 服务器错误 | 服务端异常，请联系管理员 |
 
----
-
-## 📦 错误响应格式
-
-```json
-{ "error": "错误描述信息" }
-```
-
-或：
-
-```json
-{ "detail": "错误描述信息" }
-```
