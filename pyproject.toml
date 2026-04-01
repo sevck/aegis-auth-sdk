@@ -7,7 +7,7 @@ name = "aegis-auth-sdk"
 version = "0.0.7"
 description = "Aegis Authentication SDK for Python."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.6"
 
 [project.urls]
 "Homepage" = "https://github.com/sevck/aegis-auth-sdk"
