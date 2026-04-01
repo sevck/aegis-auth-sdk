@@ -49,7 +49,20 @@ Aegis Auth SDK 是一款面向现代 Web 应用的身份认证开发工具包，
 
 ---
 
+## 📦 环境要求
+
+- **Python 2.7** 或 **Python 3.6+**
+- 无第三方依赖，仅使用 Python 标准库
+
+---
+
 ## 🛠 快速上手
+
+### 安装
+
+```bash
+pip install aegis-auth-sdk
+```
 
 ### SDK 示例
 
@@ -69,14 +82,15 @@ print(app_info)
 # 获取用户列表
 result = client.get_users()
 for user in result["users"]:
-    print(f'  {user["username"]:<20} 状态={"启用" if user["status"] else "禁用"}  '
-          f'注册时间={user["register_time"]}  最后登录={user["login_time"] or "从未"}')
+    print("%s  状态=%s  注册时间=%s  最后登录=%s" % (
+        user["username"], "启用" if user["status"] else "禁用",
+        user["register_time"], user["login_time"] or "从未"))
 
 # 禁用/启用用户
 client.set_user_status("alice", False)
 
 # 禁用/启用应用注册
-client.set_app_register( False)
+client.set_app_register(False)
 
 # 删除用户
 client.delete_user("alice")
@@ -84,7 +98,8 @@ client.delete_user("alice")
 # 查询日志
 logs = client.get_logs(log_type="auth_verify", page_size=5)
 for entry in logs["items"]:
-    print(f'  [{entry["log_time"]}] {entry["username"]} from {entry["log_ip"]} - {entry["log_info"]}')
+    print("[%s] %s from %s - %s" % (
+        entry["log_time"], entry["username"], entry["log_ip"], entry["log_info"]))
 ```
 
 ---
@@ -232,6 +247,7 @@ async def user_register_verification(req: dict, request: Request, db: Session = 
 | 200        | 成功       | 请求处理成功 |
 | 400        | 请求错误   | 参数缺失或格式错误 |
 | 401        | 认证失败   | App ID / Secret 错误或应用被禁用 |
+| 403        | 禁止访问   | 应用已关闭注册，或 WebAuthn 验证未通过 |
 | 404        | 未找到     | 资源不存在 |
 | 500        | 服务器错误 | 服务端异常，请联系管理员 |
 

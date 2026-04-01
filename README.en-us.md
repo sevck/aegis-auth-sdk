@@ -50,6 +50,13 @@ Aegis Auth SDK is a modern authentication toolkit for Web applications, built on
 
 ---
 
+## 📦 Requirements
+
+- **Python 2.7** or **Python 3.6+**
+- Zero third-party dependencies (stdlib only)
+
+---
+
 ## 🛠 Quick Start
 
 ### Installation
@@ -76,7 +83,7 @@ print(app_info)
 # List users
 result = client.get_users()
 for user in result["users"]:
-    print(f'{user["username"]} - Status: {"Enabled" if user["status"] else "Disabled"}')
+    print("%s - Status: %s" % (user["username"], "Enabled" if user["status"] else "Disabled"))
 
 # Enable / disable user
 client.set_user_status("alice", False)
@@ -90,7 +97,8 @@ client.delete_user("alice")
 # Query logs
 logs = client.get_logs(log_type="auth_verify", page_size=5)
 for entry in logs["items"]:
-    print(f'[{entry["log_time"]}] {entry["username"]} from {entry["log_ip"]} - {entry["log_info"]}')
+    print("[%s] %s from %s - %s" % (
+        entry["log_time"], entry["username"], entry["log_ip"], entry["log_info"]))
 ```
 
 ---

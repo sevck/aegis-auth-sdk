@@ -5,7 +5,7 @@
 class AegisError(Exception):
     """Aegis API 错误"""
 
-    def __init__(self, status: int, message: str):
+    def __init__(self, status, message):
         self.status = status
         self.message = message
-        super().__init__(f"[{status}] {message}")
+        super(AegisError, self).__init__("[%d] %s" % (status, message))
