@@ -195,7 +195,7 @@ class AegisClient(object):
             "/api/registration/%s/%s/options" % (self.app_id, username),
         )
 
-    def register_verify(self, username, credential):
+    def get_register_verify(self, username, credential):
         """
         验证用户注册（WebAuthn 代理）。
 

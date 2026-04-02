@@ -8,63 +8,64 @@
 </p>
 
 <p align="center">
-<a href="./README.en-us.md">English</a> | <a href="./README.zh-cn.md">简体中文</a>
+<a href="./README.md">English</a> | <a href="./README.zh-cn.md">简体中文</a>
 </p>
 
 # Aegis Auth SDK
 
-## 🚀 核心价值：让身份认证回归简单与安全
-Aegis Auth SDK 是一款面向现代 Web 应用的身份认证开发工具包，基于 **WebAuthn（FIDO2）标准**，帮助开发者快速构建**无密码（Passwordless）认证体系**，从根本上规避传统密码机制带来的安全风险与用户体验问题。
+## 🚀 Core Value: Making Authentication Simple and Secure
+
+Aegis Auth SDK is a modern authentication toolkit for Web applications, built on the **WebAuthn (FIDO2) standard**. It enables developers to quickly implement **passwordless authentication**, fundamentally eliminating the security risks and usability issues associated with traditional passwords.
 
 ---
 
-## 🌟 核心优势
+## 🌟 Key Features
 
-### 1. 极致的开发体验
-- **开箱即用**：支持 `pip` 一键SDK安装，无需复杂环境配置  
-- **高度封装**: 优化底层交互细节，仅需少量代码即可完成接入  
-- **快速集成**：分钟级完成用户注册与登录能力接入  
-
----
-
-### 2. 安全合规的无密码方案
-- **无密码**：无需用户输入密码，有效防御弱口令与密码泄露撞库攻击  
-- **无敏感数据**：服务端仅存储公钥，不涉及生物特征原始数据，不存储任何敏感信息  
-- **抗自动化攻击**：基于挑战-响应机制，天然抵御暴力破解与批量注册，可防止机器人攻击  
+### 1. Excellent Developer Experience
+- **Out-of-the-box**: Install via `pip` with zero complex setup  
+- **Highly abstracted**: WebAuthn complexity is fully encapsulated  
+- **Fast integration**: Implement registration and login in minutes  
 
 ---
 
-### 3. 跨平台支持
-- **全平台兼容**：
-  - Windows 10以上版本(Windows Hello)  
+### 2. Secure & Compliant Passwordless Solution
+- **Passwordless by design**: Eliminates password reuse, phishing, and credential stuffing  
+- **Minimal sensitive data**: Only public keys stored server-side, no biometric raw data  
+- **Anti-automation**: Challenge-response mechanism prevents brute-force and bot attacks  
+
+---
+
+### 3. Cross-platform & Biometric Support
+- **Multi-platform compatibility**:
+  - Windows Hello  
   - macOS Touch ID  
-  - iOS / Android（Face ID / 指纹）  
-- **设备级强绑定**：实现“用户 + 设备”双因子绑定，确保操作主体可信  
+  - iOS / Android (Face ID / Fingerprint)  
+- **Device binding**: Strong "User + Device" trust model  
 
 ---
 
-### 4. 企业级用户管理能力
-- **统一用户视图**：支持用户列表、用户状态管理、应用注册管理等  
-- **审计与日志**：完整认证日志，便于安全审计与追踪  
+### 4. Enterprise-grade User Management
+- **Unified user view**: Credential management, device binding, status control  
+- **Audit logs**: Full authentication traceability  
 
 ---
 
-## 📦 环境要求
+## 📦 Requirements
 
-- **Python 2.7** 或 **Python 3.6+**
-- 无第三方依赖，仅使用 Python 标准库
+- **Python 2.7** or **Python 3.6+**
+- Zero third-party dependencies (stdlib only)
 
 ---
 
-## 🛠 快速上手
+## 🛠 Quick Start
 
-### 安装
+### Installation
 
 ```bash
 pip install aegis-auth-sdk
 ```
 
-### SDK 示例
+### SDK Example
 
 ```python
 from aegis_auth_sdk import AegisClient
@@ -75,30 +76,28 @@ client = AegisClient(
     secret_key="your_secret_key"
 )
 
-# 获取应用信息
+# Get app info
 app_info = client.get_app_info()
 print(app_info)
 
-# 获取用户列表
+# List users
 result = client.get_users()
 for user in result["users"]:
-    print("%s  状态=%s  注册时间=%s  最后登录=%s" % (
-        user["username"], "启用" if user["status"] else "禁用",
-        user["register_time"], user["login_time"] or "从未"))
+    print("%s - Status: %s" % (user["username"], "Enabled" if user["status"] else "Disabled"))
 
-# 禁用/启用用户
+# Enable / disable user
 client.set_user_status("alice", False)
 
-# 禁用/启用应用注册
+# Enable / disable app registration
 client.set_app_register(False)
 
-# 启用/禁用多设备注册
+# Enable / disable multi-device registration
 client.set_app_multi_device(True)
 
-# 删除用户
+# Delete user
 client.delete_user("alice")
 
-# 查询日志
+# Query logs
 logs = client.get_logs(log_type="auth_verify", page_size=5)
 for entry in logs["items"]:
     print("[%s] %s from %s - %s" % (
@@ -107,150 +106,110 @@ for entry in logs["items"]:
 
 ---
 
-## 接入示例
+## 🌐 Integration Example
 
-### 前端示例
+### Frontend Example
 
 ```javascript
-
 export const fetchUserLoginOptions = (param) => {
     return request({
-        url: '/api/user/login/options', // 你的服务后端API
-        headers: {
-            'Content-Type': 'application/json',
-            'Login-Name': param.username,
-        },
+        url: '/api/user/login/options',
+        headers: { 'Content-Type': 'application/json', 'Login-Name': param.username },
         method: 'post',
         data: param
     });
 };
 
-export const fetchUserLoginVerify = (username: string, asseResp: object) => {
+export const fetchUserLoginVerify = (username, asseResp) => {
     return request({
-        url: '/api/user/login/verification', // 你的服务后端API
+        url: '/api/user/login/verification',
         method: 'post',
-        headers: {
-            'Content-Type': 'application/json',
-            'Login-Name': username
-        },
+        headers: { 'Content-Type': 'application/json', 'Login-Name': username },
         data: asseResp
     });
 };
 
 const resp = await fetchUserLoginOptions(param);
-const registrationOptions = resp.data;
-const asseResp = await startAuthentication(registrationOptions);
+const asseResp = await startAuthentication(resp.data);
 const verificationResp = await fetchUserLoginVerify(param.username, asseResp);
-const verificationJSON = verificationResp.data;
 
-if (verificationJSON.code === 200) {
-    ElMessage.success('登录成功');
-    localStorage.setItem('username', param.username);
-    localStorage.setItem(
-        'Authorization',
-        verificationJSON.token_type + ' ' + verificationJSON.access_token
-    );
-
+if (verificationResp.data.code === 200) {
+    localStorage.setItem('Authorization', verificationResp.data.token_type + ' ' + verificationResp.data.access_token);
     router.push('/');
-
-    if (checked.value) {
-      localStorage.setItem('login-param', JSON.stringify(param));
-    } else {
-      localStorage.removeItem('login-param');
-    }
-  } else {
-    ElMessage.error('登录失败');
-  }
-};
-
-
+}
 ```
 
-### 后端示例
+### Backend Example
+
 ```python
 from aegis_auth_sdk import AegisClient
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+import jwt, datetime
 
+SECRET_KEY = "your-jwt-secret"
 client = AegisClient(
     base_url="https://your-server:8000",
     app_id="your_app_id",
     secret_key="your_secret_key"
 )
 
+user = APIRouter()
 
-@user.post("/login/options", description="用户登录预请求")
-async def user_login_options(req: dict, request: Request, db: Session = Depends(get_db)):
-    try:
-        headers = request.headers
-        username = headers.get("Login-Name", None)
-        # 获取登录options
-        resp = client.get_login_options(username)
+@user.post("/login/options")
+async def user_login_options(req: dict, request: Request):
+    username = request.headers.get("Login-Name")
+    resp = client.get_login_options(username)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
 
-        return JSONResponse(status_code=resp.status_code, content=resp.json())
-    except Exception as e:
-        return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
+@user.post("/login/verification")
+async def user_login_verification(req: dict, request: Request):
+    username = request.headers.get("Login-Name")
+    resp = client.get_login_verify(username, req)
+    if resp.json().get("verified", False):
+        token = jwt.encode({
+            "user": username,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
+        }, SECRET_KEY, algorithm="HS256")
+        return JSONResponse(content={"access_token": token, "token_type": "Bearer", "code": 200})
+    return JSONResponse(status_code=200, content={"code": 500, "msg": resp.text})
 
+@user.post("/register/options")
+async def user_register_options(req: dict, request: Request):
+    username = request.headers.get("Login-Name")
+    resp = client.get_register_options(username)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
 
-@user.post("/login/verification", description="用户登录验证")
-async def user_login_verification(req: dict, request: Request, db: Session = Depends(get_db)):
-    try:
-        headers = request.headers
-        username = headers.get("Login-Name", None)
-        origin = headers.get("origin", None)
-        if username is None or origin is None:
-            return JSONResponse(status_code=200, content={"code": False, "msg": "Miss username or origin"})
-        # 验证登录
-        resp = client.get_login_verify(username, req)
-        # 验证成功签发jwt token
-        if resp.json().get("verified", False):
-            token = jwt.encode({
-                "user": username,
-                "role": "admin",
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
-            }, SECRET_KEY, algorithm=algorithm).decode("utf-8")
-            return JSONResponse(
-              status_code=resp.status_code,
-              content={"access_token": token, "token_type": "Bearer", "code": 200}
-            )
-
-        return JSONResponse(
-          status_code=200,
-          content={"code": 500, "username": username, "msg": resp.text}
-        )
-    except Exception as e:
-        return HTTPException(status_code=200, detail={"code": 400, "msg": str(e)})
-
-
-@user.post("/register/options", description="注册预请求")
-async def user_register_options(req: dict, request: Request, db: Session = Depends(get_db)):
-    try:
-        headers = request.headers
-        username = headers.get("Login-Name", None)
-        # 获取注册options
-        resp = client.get_register_options(username)
-        return JSONResponse(status_code=resp.status_code, content=resp.json())
-    except Exception as e:
-        return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
-
-@user.post("/register/verification", description="注册验证")
-async def user_register_verification(req: dict, request: Request, db: Session = Depends(get_db)):
-    try:
-        headers = request.headers
-        username = headers.get("Login-Name", None)
-        # 验证注册
-        resp = client.register_verify(username, req)
-        return JSONResponse(status_code=resp.status_code, content=resp.json())
-    except Exception as e:
-        return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
+@user.post("/register/verification")
+async def user_register_verification(req: dict, request: Request):
+    username = request.headers.get("Login-Name")
+    resp = client.get_register_verify(username, req)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
 ```
 
-## ⚠️ 错误码说明
+---
 
-| HTTP 状态码 | 含义       | 说明 |
-|------------|------------|------|
-| 200        | 成功       | 请求处理成功 |
-| 400        | 请求错误   | 参数缺失或格式错误 |
-| 401        | 认证失败   | App ID / Secret 错误或应用被禁用 |
-| 403        | 禁止访问   | 应用已关闭注册，或 WebAuthn 验证未通过 |
-| 404        | 未找到     | 资源不存在 |
-| 500        | 服务器错误 | 服务端异常，请联系管理员 |
+## ⚠️ Error Codes
 
+| HTTP Status | Meaning        | Description |
+|------------|---------------|-------------|
+| 200        | OK            | Request successful |
+| 400        | Bad Request   | Missing or invalid parameters |
+| 401        | Unauthorized  | Invalid App ID / Secret or app disabled |
+| 403        | Forbidden     | Registration disabled or WebAuthn verification failed |
+| 404        | Not Found     | Resource not found |
+| 500        | Server Error  | Internal server error |
+
+---
+
+## 📦 Error Response Format
+
+```json
+{ "error": "Error message" }
+```
+
+or:
+
+```json
+{ "detail": "Error message" }
+```
