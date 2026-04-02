@@ -92,6 +92,9 @@ client.set_user_status("alice", False)
 # 禁用/启用应用注册
 client.set_app_register(False)
 
+# 启用/禁用多设备注册
+client.set_app_multi_device(True)
+
 # 删除用户
 client.delete_user("alice")
 

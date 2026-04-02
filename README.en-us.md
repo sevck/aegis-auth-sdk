@@ -91,6 +91,9 @@ client.set_user_status("alice", False)
 # Enable / disable app registration
 client.set_app_register(False)
 
+# Enable / disable multi-device registration
+client.set_app_multi_device(True)
+
 # Delete user
 client.delete_user("alice")
 

@@ -152,6 +152,19 @@ class AegisClient(object):
             body={"allow_register": allow},
         )
 
+    def set_app_multi_device(self, allow):
+        """
+        启用或禁用应用多设备注册功能。
+
+        启用后同一用户可在多个设备上注册 WebAuthn 凭证。
+
+        :param allow: True=允许多设备注册, False=禁止多设备注册
+        """
+        return self._request(
+            "POST", "/api/app/multi_device",
+            body={"allow_multi_device": allow},
+        )
+
     def get_logs(self, page=1, page_size=20, username=None, log_type=None):
         """
         查询应用下的操作日志。

@@ -6,5 +6,5 @@ from .client import AegisClient
 from .response import AegisResponse
 from .exceptions import AegisError
 
-__version__ = "0.0.8"
+__version__ = "0.0.9"
 __all__ = ["AegisClient", "AegisResponse", "AegisError"]
