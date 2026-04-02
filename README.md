@@ -208,8 +208,3 @@ async def user_register_verification(req: dict, request: Request):
 { "error": "Error message" }
 ```
 
-or:
-
-```json
-{ "detail": "Error message" }
-```
