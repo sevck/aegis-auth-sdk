@@ -69,10 +69,20 @@ pip install aegis-auth-sdk
 ```python
 from aegis_auth_sdk import AegisClient
 
+# 基础初始化
 client = AegisClient(
     base_url="https://your-server:8000",
     app_id="your_app_id",
     secret_key="your_secret_key"
+)
+
+# 代理场景：将浏览器 UA 和用户真实 IP 透传给 Aegis 日志
+client = AegisClient(
+    base_url="https://your-server:8000",
+    app_id="your_app_id",
+    secret_key="your_secret_key",
+    user_agent="Mozilla/5.0 ...",  # 上游请求中浏览器的 User-Agent
+    client_ip="10.0.0.1",         # 上游请求中用户的真实 IP
 )
 
 # 获取应用信息
@@ -170,74 +180,67 @@ if (verificationJSON.code === 200) {
 ```python
 from aegis_auth_sdk import AegisClient
 
-client = AegisClient(
-    base_url="https://your-server:8000",
-    app_id="your_app_id",
-    secret_key="your_secret_key"
-)
+BASE_URL = "https://your-server:8000"
+APP_ID = "your_app_id"
+APP_SECRET = "your_secret_key"
 
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.headers.get("X-Real-IP") or (request.client.host if request.client else None)
+
+def _make_client(request: Request):
+    return AegisClient(
+        base_url=BASE_URL, app_id=APP_ID, secret_key=APP_SECRET,
+        user_agent=request.headers.get("user-agent"),
+        client_ip=_get_client_ip(request),
+    )
 
 @user.post("/login/options", description="用户登录预请求")
-async def user_login_options(req: dict, request: Request, db: Session = Depends(get_db)):
+async def user_login_options(req: dict, request: Request):
     try:
-        headers = request.headers
-        username = headers.get("Login-Name", None)
-        # 获取登录options
-        resp = client.get_login_options(username)
-
+        username = request.headers.get("Login-Name", None)
+        resp = _make_client(request).get_login_options(username)
         return JSONResponse(status_code=resp.status_code, content=resp.json())
     except Exception as e:
         return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
 
 
 @user.post("/login/verification", description="用户登录验证")
-async def user_login_verification(req: dict, request: Request, db: Session = Depends(get_db)):
+async def user_login_verification(req: dict, request: Request):
     try:
-        headers = request.headers
-        username = headers.get("Login-Name", None)
-        origin = headers.get("origin", None)
-        if username is None or origin is None:
-            return JSONResponse(status_code=200, content={"code": False, "msg": "Miss username or origin"})
-        # 验证登录
-        resp = client.get_login_verify(username, req)
-        # 验证成功签发jwt token
+        username = request.headers.get("Login-Name", None)
+        origin = request.headers.get("origin", None)
+        if username is None:
+            return JSONResponse(status_code=200, content={"code": False, "msg": "Miss username"})
+        resp = _make_client(request).get_login_verify(username, req, origin=origin)
         if resp.json().get("verified", False):
             token = jwt.encode({
                 "user": username,
                 "role": "admin",
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
-            }, SECRET_KEY, algorithm=algorithm).decode("utf-8")
-            return JSONResponse(
-              status_code=resp.status_code,
-              content={"access_token": token, "token_type": "Bearer", "code": 200}
-            )
-
-        return JSONResponse(
-          status_code=200,
-          content={"code": 500, "username": username, "msg": resp.text}
-        )
+            }, SECRET_KEY, algorithm="HS256")
+            return JSONResponse(content={"access_token": token, "token_type": "Bearer", "code": 200})
+        return JSONResponse(status_code=200, content={"code": 500, "username": username, "msg": resp.text})
     except Exception as e:
-        return HTTPException(status_code=200, detail={"code": 400, "msg": str(e)})
+        return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
 
 
 @user.post("/register/options", description="注册预请求")
-async def user_register_options(req: dict, request: Request, db: Session = Depends(get_db)):
+async def user_register_options(req: dict, request: Request):
     try:
-        headers = request.headers
-        username = headers.get("Login-Name", None)
-        # 获取注册options
-        resp = client.get_register_options(username)
+        username = request.headers.get("Login-Name", None)
+        resp = _make_client(request).get_register_options(username)
         return JSONResponse(status_code=resp.status_code, content=resp.json())
     except Exception as e:
         return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})
 
 @user.post("/register/verification", description="注册验证")
-async def user_register_verification(req: dict, request: Request, db: Session = Depends(get_db)):
+async def user_register_verification(req: dict, request: Request):
     try:
-        headers = request.headers
-        username = headers.get("Login-Name", None)
-        # 验证注册
-        resp = client.get_register_verify(username, req)
+        username = request.headers.get("Login-Name", None)
+        resp = _make_client(request).get_register_verify(username, req)
         return JSONResponse(status_code=resp.status_code, content=resp.json())
     except Exception as e:
         return JSONResponse(status_code=200, content={"code": 400, "msg": str(e)})

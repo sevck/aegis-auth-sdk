@@ -70,10 +70,20 @@ pip install aegis-auth-sdk
 ```python
 from aegis_auth_sdk import AegisClient
 
+# Basic initialization
 client = AegisClient(
     base_url="https://your-server:8000",
     app_id="your_app_id",
     secret_key="your_secret_key"
+)
+
+# Proxy scenario: forward browser UA and real IP to Aegis logs
+client = AegisClient(
+    base_url="https://your-server:8000",
+    app_id="your_app_id",
+    secret_key="your_secret_key",
+    user_agent="Mozilla/5.0 ...",  # browser User-Agent from upstream request
+    client_ip="10.0.0.1",         # real client IP from upstream request
 )
 
 # Get app info
@@ -148,24 +158,36 @@ from fastapi.responses import JSONResponse
 import jwt, datetime
 
 SECRET_KEY = "your-jwt-secret"
-client = AegisClient(
-    base_url="https://your-server:8000",
-    app_id="your_app_id",
-    secret_key="your_secret_key"
-)
+BASE_URL = "https://your-server:8000"
+APP_ID = "your_app_id"
+APP_SECRET = "your_secret_key"
 
 user = APIRouter()
+
+def _get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.headers.get("X-Real-IP") or (request.client.host if request.client else None)
+
+def _make_client(request: Request):
+    return AegisClient(
+        base_url=BASE_URL, app_id=APP_ID, secret_key=APP_SECRET,
+        user_agent=request.headers.get("user-agent"),
+        client_ip=_get_client_ip(request),
+    )
 
 @user.post("/login/options")
 async def user_login_options(req: dict, request: Request):
     username = request.headers.get("Login-Name")
-    resp = client.get_login_options(username)
+    resp = _make_client(request).get_login_options(username)
     return JSONResponse(status_code=resp.status_code, content=resp.json())
 
 @user.post("/login/verification")
 async def user_login_verification(req: dict, request: Request):
     username = request.headers.get("Login-Name")
-    resp = client.get_login_verify(username, req)
+    origin = request.headers.get("origin")
+    resp = _make_client(request).get_login_verify(username, req, origin=origin)
     if resp.json().get("verified", False):
         token = jwt.encode({
             "user": username,
@@ -177,13 +199,13 @@ async def user_login_verification(req: dict, request: Request):
 @user.post("/register/options")
 async def user_register_options(req: dict, request: Request):
     username = request.headers.get("Login-Name")
-    resp = client.get_register_options(username)
+    resp = _make_client(request).get_register_options(username)
     return JSONResponse(status_code=resp.status_code, content=resp.json())
 
 @user.post("/register/verification")
 async def user_register_verification(req: dict, request: Request):
     username = request.headers.get("Login-Name")
-    resp = client.get_register_verify(username, req)
+    resp = _make_client(request).get_register_verify(username, req)
     return JSONResponse(status_code=resp.status_code, content=resp.json())
 ```
 

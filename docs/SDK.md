@@ -19,10 +19,20 @@ Requirements: Python 2.7 or Python 3.6+, no third-party dependencies.
 ```python
 from aegis_auth_sdk import AegisClient
 
+# Basic initialization
 client = AegisClient(
     base_url="https://your-server:8000",
     app_id="your_app_id",
     secret_key="your_secret_key"
+)
+
+# Proxy scenario: forward browser UA and real client IP to Aegis logs
+client = AegisClient(
+    base_url="https://your-server:8000",
+    app_id="your_app_id",
+    secret_key="your_secret_key",
+    user_agent="Mozilla/5.0 ...",   # browser User-Agent from upstream request
+    client_ip="10.0.0.1",           # real client IP from upstream request
 )
 ```
 
@@ -33,6 +43,8 @@ client = AegisClient(
 | `secret_key` | str | Yes | — | Application Secret Key |
 | `verify_ssl` | bool | No | `False` | Whether to verify SSL certificates (set `False` for self-signed certs) |
 | `timeout` | int | No | `10` | Request timeout in seconds |
+| `user_agent` | str | No | `None` | Custom User-Agent; in proxy scenarios, pass the browser UA to forward it to Aegis |
+| `client_ip` | str | No | `None` | Real client IP; forwarded via `X-Forwarded-For` so Aegis logs the user's actual IP |
 
 ---
 
