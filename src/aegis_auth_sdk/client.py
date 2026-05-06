@@ -32,13 +32,15 @@ class AegisClient(object):
     :param secret_key:  应用密钥（创建服务时生成）
     :param verify_ssl:  是否验证 SSL 证书（自签名证书请设为 False）
     :param timeout:     请求超时时间（秒）
+    :param user_agent:  自定义 User-Agent（代理场景下可透传浏览器 UA）
     """
 
-    def __init__(self, base_url, app_id, secret_key, verify_ssl=False, timeout=10):
+    def __init__(self, base_url, app_id, secret_key, verify_ssl=False, timeout=10, user_agent=None):
         self.base_url = base_url.rstrip("/")
         self.app_id = app_id
         self.secret_key = secret_key
         self.timeout = timeout
+        self.user_agent = user_agent
 
         if verify_ssl:
             self._ssl_ctx = None
@@ -62,6 +64,8 @@ class AegisClient(object):
         if auth:
             req_headers["X-App-ID"] = self.app_id
             req_headers["X-Secret-Key"] = self.secret_key
+        if self.user_agent:
+            req_headers["User-Agent"] = self.user_agent
         if headers:
             req_headers.update(headers)
 
@@ -85,6 +89,8 @@ class AegisClient(object):
         url = self.base_url + path
 
         req_headers = {"Content-Type": "application/json"}
+        if self.user_agent:
+            req_headers["User-Agent"] = self.user_agent
         if headers:
             req_headers.update(headers)
 
