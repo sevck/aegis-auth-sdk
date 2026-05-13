@@ -128,8 +128,24 @@ class AegisClient(object):
         获取应用下所有已注册用户。
 
         :returns: ``{"total": int, "users": [...]}``
+                  每条用户记录包含 username, device_id, status, role 等字段。
         """
         return self._request("GET", "/api/app/users")
+
+    def set_user_role(self, username, role):
+        """
+        设置指定用户的角色。
+
+        :param username: 用户名
+        :param role:     角色，``"admin"`` 或 ``"member"``
+        :returns: ``{"success": True, "username": str, "role": str}``
+        """
+        if role not in ("admin", "member"):
+            raise ValueError("role 只能为 'admin' 或 'member'")
+        return self._request(
+            "POST", "/api/app/users/role",
+            body={"username": username, "role": role},
+        )
 
     def delete_user(self, username):
         """
