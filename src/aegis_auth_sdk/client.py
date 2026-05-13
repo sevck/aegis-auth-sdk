@@ -223,18 +223,23 @@ class AegisClient(object):
             "/api/registration/%s/%s/options" % (self.app_id, username),
         )
 
-    def get_register_verify(self, username, credential):
+    def get_register_verify(self, username, credential, origin=None):
         """
         验证用户注册（WebAuthn 代理）。
 
         :param username:   用户名
         :param credential: 前端序列化后的凭证对象
+        :param origin:     请求来源（可选），用于 WebAuthn origin 校验
         :returns: AegisResponse
         """
+        extra_headers = {}
+        if origin:
+            extra_headers["origin"] = origin
         return self._raw_request(
             "POST",
             "/api/registration/%s/%s/verification" % (self.app_id, username),
             body=credential,
+            headers=extra_headers if extra_headers else None,
         )
 
     def get_login_options(self, username):
